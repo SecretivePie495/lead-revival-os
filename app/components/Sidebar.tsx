@@ -18,7 +18,6 @@ const navItems = [
   { href: "/kanban",        label: "Kanban",        chip: "Board",     icon: <KanbanIcon /> },
   { href: "/playbooks",     label: "Playbooks",     chip: "Sequences", icon: <BookIcon /> },
   { href: "/analytics",     label: "Analytics",     chip: "Reports",   icon: <ChartIcon /> },
-  { href: "/preview",       label: "Preview",       chip: "Browser",   icon: <GlobeIcon /> },
 ];
 
 function getInitials(name: string): string {
@@ -324,12 +323,9 @@ export default function Sidebar({ clients }: SidebarProps) {
               ? pathname === "/"
               : pathname.startsWith(item.href);
           const currentClientId = searchParams.get("clientId");
-          const href =
-            item.href === "/preview" && currentClientId
-              ? `${item.href}?path=${encodeURIComponent("/analytics")}&clientId=${encodeURIComponent(currentClientId)}`
-              : currentClientId
-                ? `${item.href}?clientId=${encodeURIComponent(currentClientId)}`
-                : item.href;
+          const href = currentClientId
+            ? `${item.href}?clientId=${encodeURIComponent(currentClientId)}`
+            : item.href;
           return (
             <Link
               key={item.href}
@@ -480,20 +476,6 @@ function ChartIcon() {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M1 10.5l3.5-4.5 3 3.5L11 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M1 13h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function GlobeIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.4" />
-      <path
-        d="M1.5 7h11M7 1.5c1.8 2.2 1.8 8.8 0 11M7 1.5c-1.8 2.2-1.8 8.8 0 11"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
     </svg>
   );
 }

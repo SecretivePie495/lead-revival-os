@@ -28,7 +28,16 @@ export class PortalAccessError extends Error {
 }
 
 export async function getPortalAccessState(): Promise<PortalAccessState> {
-  const supabase = await createSupabaseServerClient();
+  let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch {
+    return {
+      status: "forbidden",
+      message:
+        "Portal auth is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY on the server.",
+    };
+  }
   const {
     data: { user },
     error: userError,

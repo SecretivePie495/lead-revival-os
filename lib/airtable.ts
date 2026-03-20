@@ -3,6 +3,16 @@ const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 const LEADS_TABLE = process.env.AIRTABLE_LEADS_TABLE || "Leads";
 const CLIENTS_TABLE = process.env.AIRTABLE_CLIENTS_TABLE || "Clients";
 
+/** True when server can call Airtable (avoids crashing SSR/pages when env is missing in prod). */
+export function hasAirtableEnv(): boolean {
+  return Boolean(
+    AIRTABLE_API_KEY &&
+      AIRTABLE_API_KEY.trim() !== "" &&
+      AIRTABLE_BASE_ID &&
+      AIRTABLE_BASE_ID.trim() !== ""
+  );
+}
+
 function validateAirtableConfig(): void {
   const missing: string[] = [];
   if (!AIRTABLE_API_KEY || AIRTABLE_API_KEY.trim() === "") missing.push("AIRTABLE_API_KEY");
@@ -142,6 +152,12 @@ function normalizeClient(r: AirtableRecord<ClientFields>): ClientRecord {
 }
 
 export async function getClients(): Promise<ClientRecord[]> {
+  if (!hasAirtableEnv()) {
+    console.warn(
+      "[Airtable] Missing AIRTABLE_API_KEY or AIRTABLE_BASE_ID — returning no clients. Set them in Vercel/hosting env vars."
+    );
+    return [];
+  }
   const records = await airtableFetch<ClientFields>(CLIENTS_TABLE);
   return records.map(normalizeClient);
 }
@@ -198,6 +214,12 @@ export type LeadFields = {
 };
 
 export async function getLeads() {
+  if (!hasAirtableEnv()) {
+    console.warn(
+      "[Airtable] Missing AIRTABLE_API_KEY or AIRTABLE_BASE_ID — returning no leads."
+    );
+    return [];
+  }
   const records = await airtableFetch<LeadFields>(LEADS_TABLE);
   return records.map((r) => ({ id: r.id, ...r.fields }));
 }
@@ -314,6 +336,7 @@ export async function getLeadCountsByClientId(): Promise<Record<string, number>>
 }
 
 export async function getUnmatchedClientIdCount(): Promise<number> {
+  if (!hasAirtableEnv()) return 0;
   const [leads, clients] = await Promise.all([getLeads() as Promise<LeadWithId[]>, getClients()]);
   const knownClientCodes = new Set(
     clients.map((c) => normalizeClientId(c.ClientsID)).filter((id) => id !== "")
@@ -330,6 +353,15 @@ export async function getUnmatchedClientIdCount(): Promise<number> {
 
 // DASHBOARD SUMMARY (Leads-table powered)
 export async function getDashboardStats(clientId?: string) {
+  if (!hasAirtableEnv()) {
+    return {
+      totalLeads: 0,
+      conversations: 0,
+      bookedCalls: 0,
+      conversionRate: 0,
+      activeCampaigns: 0,
+    };
+  }
   const normalizedFilter = normalizeClientId(clientId);
   const [rawLeads, clients] = await Promise.all([
     getLeads() as Promise<LeadWithId[]>,
@@ -528,6 +560,11 @@ export async function assertLeadBelongsToClient(
 }
 
 export async function updateLeadStatus(leadId: string, status: string): Promise<void> {
+  if (!hasAirtableEnv()) {
+    throw new Error(
+      "Airtable is not configured (missing AIRTABLE_API_KEY or AIRTABLE_BASE_ID on the server)."
+    );
+  }
   const normalizedStatus = String(status ?? "").trim();
   if (!normalizedStatus) throw new Error("Status is required");
 
