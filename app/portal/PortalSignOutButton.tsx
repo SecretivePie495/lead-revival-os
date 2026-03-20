@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export default function PortalSignOutButton() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const onSignOut = async () => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      router.replace("/portal/login");
+      return;
+    }
     setLoading(true);
-    const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     router.replace("/portal/login");
   };

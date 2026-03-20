@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type PortalLoginFormProps = {
   nextPath: string;
@@ -9,7 +9,7 @@ type PortalLoginFormProps = {
 };
 
 export default function PortalLoginForm({ nextPath, initialError }: PortalLoginFormProps) {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -19,6 +19,10 @@ export default function PortalLoginForm({ nextPath, initialError }: PortalLoginF
     event.preventDefault();
     const trimmed = email.trim();
     if (!trimmed) return;
+    if (!supabase) {
+      setError("Portal sign-in is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then restart the dev server.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -45,6 +49,26 @@ export default function PortalLoginForm({ nextPath, initialError }: PortalLoginF
       setLoading(false);
     }
   };
+
+  if (!supabase) {
+    return (
+      <div
+        className="mx-auto max-w-md space-y-3 rounded-[var(--r)] border p-6 bg-[var(--panel)] border-[var(--line)]"
+        role="alert"
+      >
+        <h1 className="pg-title">Client Portal Login</h1>
+        <p className="pg-sub" style={{ color: "#f43f5e" }}>
+          Portal sign-in is not configured in this environment.
+        </p>
+        <p className="text-xs" style={{ color: "var(--tx-3)", lineHeight: 1.5 }}>
+          Add <code className="rounded bg-[var(--panel-2)] px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
+          <code className="rounded bg-[var(--panel-2)] px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to{" "}
+          <code className="rounded bg-[var(--panel-2)] px-1">.env.local</code> (local) or your host&apos;s
+          environment variables (e.g. Vercel), then restart the dev server or redeploy.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={onSubmit} className="mx-auto max-w-md space-y-4 rounded-[var(--r)] border p-6 bg-[var(--panel)] border-[var(--line)]">
